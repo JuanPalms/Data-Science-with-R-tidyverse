@@ -1,0 +1,851 @@
+---
+title: "Section 1 tidyverse essential"
+author: "Juan Palmeros"
+format: html
+editor: visual
+self-contained: true
+---
+
+Install packages
+
+```{r}
+install.packages("tidyverse")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("ggplot2")
+```
+
+Load packages
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+#### Inspect data
+
+```{r}
+# We inspect the data we will download from ggplot2 package
+help("mpg")
+```
+
+```{r}
+#Asign the mpg data set to df
+df<-mpg
+View(df)
+#View opens the viewer for that object
+print(df)
+#prints the tibble format
+```
+
+```{r}
+#check the type of variables in the df
+str(df)
+#check number of rows and columns
+nrow(df); ncol(df)
+```
+
+## Dplyr
+
+Data wrangling
+
+#### select()
+
+Allows the extraction of variables or columns as new vector or table.
+
+select(.data,columns)
+
+-   select helper functions:
+
+    -   contains(match)
+
+    -   starts_with(match)
+
+    -   ends_with(match)
+
+    -   num_range(prefix,range)
+
+    -   one_of(..)
+
+    -   matches(match)
+
+```{r}
+#extract manufacturer, model, year
+#select(name_table, column1, column2, column3, ...) no "" required for display of columns
+select(df, manufacturer, model, year )
+#assing the selected columns into an object
+df.car.info<- select(df, manufacturer, model, year)
+```
+
+Using select helper columns
+
+```{r}
+#columns that begging with letter "m"
+select(df, starts_with(match = "m"))
+```
+
+```{r}
+#columns that contain with letteer "r"
+select(df, contains("r"))  #we can skip the specification of match=""
+```
+
+```{r}
+#selecting columns that ends with letter: "y"
+select(df, ends_with("y")) #Remember we can skip the match specification
+```
+
+select columns by column index or position
+
+```{r}
+#select the 1st to the 3rd column
+select(df, 1:3)
+```
+
+```{r}
+#select columns no consecutives
+select(df, c(2,5,7)) #pass the non-consecutive columns into a vector
+```
+
+selecting the last columns
+
+```{r}
+ncol(df) #get number of columns
+#select the third column from the back
+select(df, (ncol(df)-2):ncol(df)) #it applies to every database
+#or
+select(df, 9:11)
+
+```
+
+#### rename()
+
+Changes the name of variables/colums
+
+rename(.data, \<new_name\>=\<old_name\>)
+
+You can add options to executable code like this
+
+```{r}
+# rename manufacturer and model
+df1 <- rename(df, 
+             mnfc=manufacturer,
+             mod=model)
+colnames(df1)
+```
+
+#### select and rename
+
+select columns and rename columns in one call
+
+```{r}
+select(df,
+       mnfc=manufacturer,
+       mod=model,
+       everything()) #we add everything to select all the remaining columns
+```
+
+#### mutate()
+
+Make new variables using previous variables, you can create multiple columns in the same mutate call at the same time.
+
+mutate(.data, \<new_var1\>=conditions,
+
+\<new_var2\>=conditios)
+
+```{r}
+#create a new variable "average" between highway and city miles per gallon  
+df <- mutate(df,
+             avg_miles_per_galon=(cty + hwy)/2)
+df
+```
+
+```{r}
+#create additional variable based on manufacturer and model
+#create additional variable based on cylinders and trasmistion
+
+df<- mutate(df,
+            car=paste(manufacturer,model, sep= " "), #base Rfunction paste() concatenates two strings
+            cyl_over_transmision=paste(cyl,"cylinders","/",trans,"transmission", sep = " "))
+View(df)
+```
+
+#### transmute()
+
+New column is created but dropping in the process previous columns
+
+transmute(data, \<var\>= conditions)
+
+```{r}
+#it will drop al the columns and only keep avg_miles_per_gallon
+dfa<-transmute(df, 
+          avg_miles_per_gallon=(cty+hwy)/2)
+```
+
+```{r}
+#it will drop al the columns and only keep car and cyl over transmission
+dfb<- transmute(df,
+            car=paste(manufacturer,model, sep= " "), #base Rfunction paste() concatenates two strings
+            cyl_over_transmision=paste(cyl,"cylinders","/",trans,"transmission", sep = " "))
+```
+
+## *Manipulate cases (rows) filtering and slice*
+
+```{r}
+#reseting data
+
+df<-mpg
+
+```
+
+#### **filter()**
+
+Extract a subset of rows with a logical condition
+
+filter(.data,\<criteria\>)
+
+```{r}
+#filter on the condition where cars manufacturer is audi
+filter(df, manufacturer=="audi")
+```
+
+multiple conditions
+
+```{r}
+#USING & condition
+#filter on manufacturer audi anf year 1999
+filter(df,
+       manufacturer=="audi"& year==1999) #with and operator
+```
+
+```{r}
+#Using OR condition
+#filter where manufacturer if audi or dodge
+df_or<- filter(df, manufacturer == "audi" | manufacturer=="dodge")
+View(df_or)
+```
+
+filtering based on numbers
+
+```{r}
+#filter where hwy greater or equal than 30
+filter(df, hwy>=30)
+```
+
+```{r}
+#filter where year is not equal to 1999
+filter(df, year!=1999)
+```
+
+#### slice()
+
+Select rows by row position
+
+slice(.data,range)
+
+```{r}
+# extract by position first 5 rows
+slice(df, 1:5)
+```
+
+```{r}
+#get all rows from 20th up to 30th row included
+slice(df, 20:30)
+```
+
+```{r}
+#extract last 10 rows
+slice(df, (nrow(df)-9):nrow(df))
+```
+
+## arrange()
+
+Sort rows by values of a column or columns
+
+arrange(.data, columns-default or desc(columns))
+
+```{r}
+# arranging df by year in default(ascending order)
+arrange(df, year)
+```
+
+```{r}
+#arrange by year in descending order
+arrange(df, desc(year))
+```
+
+arranging sorting rows by multiple columns
+
+```{r}
+#arrange by year, cyl and displ
+df_sorted<- arrange(df, year, cyl, displ)
+```
+
+### distinct()
+
+remove the rows with duplicate values
+
+distinct(.data, )
+
+```{r}
+#Create a simple example
+df.example <- data.frame(id=1:3, 
+                         name=c("John","Maria","Max"))
+```
+
+Create duplicate rows and bind tables
+
+```{r}
+df.example<- bind_rows(df.example, slice(df.example,2)) #duplicated 2nd row
+df.example<-arrange(df.example,id)
+df.example
+```
+
+remove duplicate
+
+```{r}
+distinct(df.example) #ojo, this is not performed inplace
+df.example
+```
+
+Using mpg df
+
+```{r}
+#creating duplicates 
+df.dupl <- select(df, manufacturer, model) #selecting only this two columns we will have duplicates
+df.dupl
+```
+
+removing duplicates
+
+```{r}
+#keep only original rows
+df.nodupl<-distinct(df.dupl)
+df.nodupl
+```
+
+### Sample rows
+
+##### sample_n()
+
+sample_n(data,n)
+
+Randomly select and extract n rows from a table
+
+```{r}
+set.seed(567)
+#10 randomly selected rows without replacement
+sample_n(df, size=10, replace=FALSE)
+```
+
+```{r}
+#10 randomly selected rows with replacement
+sample_n(df, size=10, replace = TRUE)
+```
+
+##### sample_frac()
+
+randomly select and extract fraction of rows from a table
+
+sample_frac(.data, size)
+
+```{r}
+#randomly select 10% of table without replacement
+sample_frac(df, size=0.1, replace = FALSE)
+```
+
+```{r}
+#randomly select 10% of table with replacement
+sample_frac(df, size=0.1, replace = TRUE)
+```
+
+#### summarise()
+
+Apply summary functions applied to columns to create a new table of summary statistics
+
+-   Usually combined with summary functions:
+
+    -   min(), max()
+
+    -   mean(), sd(), var()
+
+    -   n()
+
+```{r}
+# calculate avg hwy
+summarise(df, 
+          mean_hwy=mean(hwy))
+```
+
+```{r}
+#count table rows and count distinct car models
+summarise(df,
+          rows= n(),
+          nr_models= n_distinct(model))
+```
+
+```{r}
+#calculate min/max value hwy and cty
+summarise(df,
+          min_hwy=min(hwy),
+          min_cty=min(cty),
+          max_hwy=max(hwy),
+          max_cty=max(cty))
+```
+
+#### group_by()
+
+Create a grouped copy of a table, on which you can further apply different summarization functions. You group summarization operation per one or more grouped variables.
+
+group_by(.data, columns_groupby)
+
+summarise() summarization is performed by group.
+
+```{r}
+#grouping by manufacturer
+df
+group_by(df,manufacturer)
+```
+
+Combine summarise and group_by()
+
+```{r}
+#count the number of cars for each manufacturer
+summarise(group_by(df,manufacturer),
+          cars = n())
+```
+
+Multiple stats in grouped_by data
+
+```{r}
+summarise(group_by(df,model),
+          min_hwy=min(hwy),
+          max_hwy=max(hwy),
+          min_cty=min(cty),
+          max_hwy=max(hwy))
+```
+
+#### count()
+
+Count number of rows for grouped variables
+
+```{r}
+#number of table rows
+count(df)
+#number of rows/car per model
+count(df, model)
+
+```
+
+### %\>% pipe operator
+
+Forward pipe operator %\>% is used for "piping" functions in a pipeline. The operator creates individual object for each function.
+
+This operator enables code to be more clean.
+
+Usage:
+
+\<data\> %\>% function (x, \<arg1\>, \<arg2\>, ...)
+
+We can pipe data wrangling operations:
+
+\<data frame\> %\>%
+
+filter(..)%\>% select(..)%\>%mutate(..)%\>%group_by(..)%\>%summarise%\>%arrange(..)
+
+```{r}
+# chain dplyr functions using pipe operator
+# every step is executed in a single pipeline
+# count a number of cars where a manufacturer is audi
+
+df %>%
+  filter(manufacturer=="audi") %>%
+  count()
+```
+
+```{r}
+#filter rows for manufacturer "dodge" or "chevrolet" and 
+# select only columns manufacturer. model, year and class
+
+df %>%
+  filter(manufacturer=="dodge"| manufacturer=="chevrolet") %>%
+  select(manufacturer,model,year, class)
+```
+
+```{r}
+# calculate avg for hwy and count the number of cars for each manufacturer and model class , transmission type, also filter results where avg hwy is greater than 30mpg and show results in descending order based on average hwy
+
+df %>%
+  group_by(manufacturer, model, class, trans)%>%
+  summarise(mean_hwy=mean(hwy),
+            cars=n()) %>%
+  ungroup()%>%
+  filter(mean_hwy>30)%>%
+  arrange(desc(mean_hwy))
+```
+
+#### Rotate columns: Pivoting
+
+Convert wide format into long format. Transform wide data format (more columns) to long data format (more rows).
+
+pivot_longer(.data, ...., names_to=...., values_to=...)
+
+pivot_wider(.data, ...., names_to=...., values_to=...)
+
+```{r}
+#create a simple table in long format
+table.long<- data.frame(id=1:6, 
+                        type=c("a","b","a","c","c","a"),
+                        count=c(20,50,45,15,12,5))
+table.long
+```
+
+Create a wide format table
+
+```{r}
+#converts long data to wide data -each "type" is written in its own column
+table.wide<-pivot_wider(table.long, names_from =type , values_from =count )
+table.wide
+```
+
+Perform a back conversion
+
+```{r}
+table.long1<- pivot_longer(table.wide,
+                           cols=c("a","b","c"), 
+                           names_to="type", 
+                           values_to="count",
+                           values_drop_na = T)
+table.long1
+```
+
+Using the cars dataset
+
+```{r}
+#filter rows where manufacturer is "jeep" or "land rover" or "hyundai"
+#Select model, trans, hwy
+#Calculate avg hwy for each model and trans
+#this will bea  long table format
+
+df.long<- df %>%
+  filter(manufacturer %in%  c("jeep","land rover","hyundai"))%>%
+  select(model, trans, hwy)%>%
+  group_by(model,trans)%>%
+  summarise(mean_hwy=mean(hwy))%>%
+  ungroup()
+
+df.long
+```
+
+Now convert long to wide format
+
+```{r}
+#where trans is transformed into columns
+df_widecars <- df.long%>%
+  pivot_wider(names_from = trans, 
+              values_from = mean_hwy)
+df_widecars
+```
+
+Convert back to long
+
+```{r}
+df_longcars<- df_widecars%>%
+  pivot_longer(-model,#exclue column model and use all remaining columns for pivoting
+               names_to= "trans",
+               values_to="mean_hwy",
+               values_drop_na = T)
+df_longcars
+```
+
+## Separate columns
+
+Split one column into multiple columns. Split by the selected separator character
+
+separate(.data,...,into=...,sep=...)
+
+```{r}
+### Creating a data to show the functions: generate date for 1 year
+dates <- seq.Date(from=as.Date("2021-01-01"), to=as.Date("2021-12-31"), by="day")
+```
+
+```{r}
+table <- data.frame(date=dates)
+```
+
+```{r}
+table %>%
+  head()
+```
+
+```{r}
+table %>%
+  tail()
+```
+
+```{r}
+#Separating for every component: year, month and day of the month, remove leading zeros 
+#neccessary, and sort columns
+table.sep<- table%>%
+  separate(data=., 
+        col=date,
+        into=c("year","month","dayofmonth"),
+        sep="-"
+        )%>%
+  mutate(month=as.numeric(month),
+         dayofmonth=as.numeric(dayofmonth))%>%
+  arrange(year, month, dayofmonth)
+```
+
+Another option for replicating the same function into more than one column
+
+```{r}
+table.sep2<- table %>%
+  separate(data=.,
+          col=date,
+          into=c("year","month","dayofmonth"),
+          sep="-")%>%
+  mutate_at(.tbl=.,  #table
+            .vars=c("month","dayofmonth"), #colum,ns to be mutated
+            .funs = as.numeric)%>% #function to apply
+  arrange(year,month,dayofmonth)
+```
+
+We will add a zero in month and day of month
+
+```{r}
+install.packages("stringr")
+```
+
+```{r}
+library(stringr)
+```
+
+## Unite
+
+Merge multiple columns into one column using separator character
+
+unite(.data, ..., sep=....)
+
+Create one date column by merging
+
+```{r}
+# Create one date colum by merging:
+# - year, month, dayofmonth
+# -add leading zeros (stringr)
+# sort columns
+
+table.united<- table.sep%>%
+  #addleading zeroes
+  mutate(month=str_pad(month, width = 2, side="left", pad="0"),
+         dayofmonth= str_pad(dayofmonth, width=2, side="left", pad="0")
+         )%>%
+  unite(data=.,
+        col="date",
+        year, month, dayofmonth,
+        sep="/")
+
+```
+
+Doing the mutation in a more elegant way
+
+```{r}
+table.united2<- table.sep%>%
+  mutate_at(.tbl=.,
+            .vars = c("month","dayofmonth"),
+            .funs = str_pad, 2, "left","0")%>%
+  unite(dat=.,
+        col="date",
+        year,month,dayofmonth,
+        sep="..")%>%
+  arrange(date)
+```
+
+# Dplyr and tidyr in action
+
+### Additional dplyr and tidyr functions
+
+### pull()
+
+Extract column and get a vector instead of a column
+
+pull(data,column)
+
+```{r}
+df%>% pull(hwy)
+#notice i get an array
+```
+
+```{r}
+df%>%select(hwy)
+```
+
+### group_by() and mutate()
+
+Calculations based on groups
+
+```{r}
+##Calculate avg hwy per car and manufacturer and car model
+df<-df%>% 
+  group_by(manufacturer,model)%>%
+  mutate(mean_hwy=mean(hwy))%>%
+  ungroup()
+```
+
+### case_when()
+
+Multi case if-else statement, very similar to case when statement inside SQL
+
+Usually used inside mutate statement
+
+```{r}
+### add variable 'transmission_type': automatic or manual
+df<- df%>%
+  mutate(trans_=str_sub(string=trans, start=1, end=1))%>%
+  mutate(transmission_type=case_when(trans_== "a" ~ "automatic",
+                                     trans_== "m" ~ "manual",
+                                     TRUE ~ "NA"))%>%
+  select(-trans_)
+
+df%>% count(transmission_type, trans)
+```
+
+### row_number()
+
+Ranks given rows, also woks inside groups using group_by
+
+```{r}
+## add a car rank / id not considering groups
+df<- df%>%
+  mutate(car_id=row_number())
+
+## add a car id/ considering groups per manufacturer
+df <- df%>%
+  group_by(manufacturer)%>%
+  mutate(car_id_1=row_number())%>%
+  ungroup()
+```
+
+```{r}
+rm(list=ls())
+```
+
+## Using flights data to put into practice dplyr and tidyr
+
+```{r}
+install.packages("hflights")
+```
+
+```{r}
+library(hflights)
+```
+
+```{r}
+df<- hflights
+```
+
+```{r}
+### count number of rows, columns, different flights
+nrow(hflights); ncol(hflights)
+```
+
+```{r}
+#count the flights
+df%>%
+  count(UniqueCarrier, FlightNum, TailNum, Year, Month, DayofMonth)
+```
+
+```{r}
+#how many columns beggin with word "Taxi"
+df%>%
+  select(starts_with("Taxi"))
+```
+
+```{r}
+#how many flights were flown with less than 1000 miles/greater or equal than 1000 miles
+df%>%
+  mutate(dist_1000=case_when(Distance<1000 ~ "1000 miles",
+                             Distance>=1000 ~ ">= 1000 miles"))%>%
+  count(dist_1000)
+```
+
+```{r}
+#flights per carrier sorted by top to bottom
+df%>%
+  group_by(UniqueCarrier)%>%
+  count() %>%
+  ungroup() %>%
+  arrange(desc(n))
+```
+
+```{r}
+#number of canceled  flights per each carrier
+df%>%
+  filter(Cancelled==1)%>%
+  group_by(UniqueCarrier)%>%
+  count()%>%
+  ungroup()%>%
+  arrange(desc(n))
+```
+
+```{r}
+### percentage of cancelled flights per carrier
+df%>%
+  #count flights break dow by cancelation
+  group_by(UniqueCarrier, Cancelled)%>%
+  count()%>%
+  ungroup()%>%
+  #calculate total flights
+  group_by(UniqueCarrier)%>%
+  mutate(n_flights_total=sum(n))%>%
+  ungroup()%>%
+  #calculate percentages
+  mutate(n_percent= (n/n_flights_total)*100)%>%
+  #keep only cancelled flights
+  filter(Cancelled==1)%>%
+  arrange(desc(n_percent))
+```
+
+```{r}
+## create a column date by combining year+month+dayofmonth (remove these columns)
+df<-df%>%
+  #add leading zeroes
+  mutate_at(.vars=c("Month","DayofMonth"), 
+            .funs= str_pad, 2, "left", "0" )%>%
+  unite(col="date",
+        Year, Month, DayofMonth, 
+        sep="/",
+        remove=TRUE)
+```
+
+```{r}
+## count flights per cancelled codes (codes in columns) and per carriers (in rows)
+##using pivoting
+
+
+df%>%count(CancellationCode)
+
+df%>%
+  mutate(CancellationCode=case_when(CancellationCode=="" ~ "0",
+                                    TRUE ~ CancellationCode))%>%
+  group_by(UniqueCarrier,CancellationCode)%>%
+  count()%>%
+  ungroup()%>%
+  pivot_wider(names_from= CancellationCode,
+              values_from = n,
+              values_fill = 0)
+
+
+```
+
+### mutate_all()
+
+Transformations to every columns
+
+### mutate_at()
+
+Transformations over specific columns
+
+### mutate_if()
+
+Transformations over columns that meet a certain condition

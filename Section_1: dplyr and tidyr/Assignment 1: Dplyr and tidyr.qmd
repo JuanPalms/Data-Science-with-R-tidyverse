@@ -1,0 +1,261 @@
+---
+title: "Assignment 1: Dply & tidyr in action"
+author: "Juan Palmeros"
+format: html
+editor: visual
+---
+
+## Exercise 1
+
+In this assignment you will use hflights dataset from the package hflights.\
+Use dplyr and tidyr and try to answer the following questions:\
+
+
+```{r}
+library(hflights)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+-   How many rows and columns are in table hflights?
+
+```{r}
+nrow(hflights);ncol(hflights)
+```
+
+-   How many different carriers are listed in the table (print a table with distinct carrier\
+    names)?
+
+    ```{r}
+    df<- hflights
+
+    df%>%
+      group_by(UniqueCarrier)%>%
+      count()%>%
+      arrange(desc(n))%>%
+      ungroup()
+    ```
+
+-   Which and how many airports were involved? Consider both origin and destination\
+    airports!
+
+    ```{r}
+    aeropuerto_origen<- df%>%
+      group_by(Origin)%>%
+      count()
+    aeropuerto_origen
+
+    aeropuerto_destino<-df%>%
+      group_by(Dest)%>%
+      count()
+    aeropuerto_destino
+    ```
+
+Answer: 118 were involved
+
+*Video Answer:*
+
+```{r}
+df%>%
+  select(Origin,Dest)%>%
+  distinct()%>%
+  pivot_longer(cols=everything(),
+               names_to="orig/dest",
+               values_to = "airport")%>%
+  distinct(airport)%>%
+  arrange()
+```
+
+-   How many flights were canceled?
+
+```{r}
+df%>%
+  group_by(Cancelled)%>%
+  count()
+```
+
+Answer: 2,973 flights were cancelled
+
+*Video answer*
+
+```{r}
+df%>%
+  filter(Cancelled==1)%>%
+  nrow()
+```
+
+### Exercise 2
+
+First, produce a table where statistics for each carrier is shown:\
+
+
+1.  number of flights per carrier
+
+2.  total distance flown in miles per carrier
+
+3.   total actual elapsed time in hours per carrier
+
+4.   total air time in hours per carrier
+
+5.   mean distance per flight for each carrier
+
+6.   mean actual elapsed time in hours per flight for each carrier
+
+7.   mean air time in hours per flight for each carrier
+
+```{r}
+carrier.stats<-  df%>%
+        group_by(UniqueCarrier)%>%
+        summarise("Number of flights pc"=n(),
+                  "Total distance flown"= sum(Distance),
+                  "Total elapsed time"= round(sum(ActualElapsedTime, na.rm = T)/60,1),
+                  "Total Air Time hours"=round(sum(AirTime, na.rm = T)/60,1),
+                  "Mean distance per fligth"=mean(Distance),
+                  "Mean time elapsed hours"=round(mean(ActualElapsedTime, na.rm =T)/60,1),
+                  "Mean aire time hours"=round(mean(AirTime, na.rm=T)/60,1)
+        )
+carrier.stats
+```
+
+Second, calculate the percentage of total distance flown by top 3 performing carriers VS total distance flown by remaining carriers. Execute steps:\
+ 1) first rank carriers by total distance flown\
+2) top 3 performers are in one group, remaining carriers are in second group\
+3) for each group calculate total distance flown for each group calculate %:
+
+total distance f lown per group\
+total distance all carriers
+
+```{r}
+df %>%
+  select(UniqueCarrier,Distance)%>%
+  group_by(UniqueCarrier)%>%
+  summarise(total_distance_pc=sum(Distance))%>%
+  mutate(top_performer=case_when(total_distance_pc>=27506052 ~ "Top 3",
+                                     total_distance_pc<27506052 ~ "Lower rank",
+                                     ))%>%
+  group_by(top_performer)%>%
+  summarise(distancia_por_grupo=sum(total_distance_pc))%>%
+  summarise(porcentaje_por_grupo=distancia_por_grupo/sum(distancia_por_grupo)*100)
+```
+
+###### *Video response*
+
+```{r}
+carrier.stats%>%
+  select(UniqueCarrier,distance=`Total distance flown`)%>%
+  arrange(desc(distance))%>%
+  mutate(rank=row_number(),
+         group=case_when(rank<=3 ~ "Top performer",
+                         rank> 3 ~ "Low performer"))%>%
+  group_by(group)%>%
+  summarise(carrier=n(),
+            distance=sum(distance))%>%
+  ungroup()%>%
+  mutate(percent_pg=(distance/sum(distance))*100)%>%
+  arrange(desc(distance))
+```
+
+### Exercise 3
+
+```{r}
+library(stringr)
+library(lubridate)
+```
+
+Modify your main flights table:\
+
+-   create date column by uniting columns: year, month, day of month.
+
+-   when uniting columns do not lose source columns (mutate each column - with slightly\
+    different name, before unite operation is executed)
+
+-   you will need to parse date column after unite operation
+
+-   also you should add leading zeros to month and day of month column before date is\
+    created
+
+-   create columns: quarter, week
+
+```{r}
+df<- df%>%
+  mutate(year=Year, 
+         month=Month,
+         dayofmonth=DayofMonth)%>%
+  mutate_at(.vars=c("Month","DayofMonth"), 
+            .funs= str_pad, 2, "left", "0" )%>%
+  unite(col="date",
+        Year, Month, DayofMonth, 
+        sep="/")%>%
+  mutate(dat=ymd(date))%>%
+  ## add quarter and week
+  mutate(quarter=quarter(date),
+         week=isoweek(date))%>%
+  select(date,year,month, dayofmonth, quarter, week, DayOfWeek, everything())
+
+
+```
+
+Is total number of flights increasing or decreasing quarterly
+
+```{r}
+df%>% 
+  group_by(quarter)%>%
+  summarise(flights_pq=n())%>%
+  ungroup()%>%
+  mutate(delta_flights=flights_pq-lag(flights_pq,1))
+```
+
+### Exercise 4
+
+\
+The idea for the last exercise is another data wrangling task, where you will have to use\
+technique called "pivoting". Build a table, that will resemble a heat map by:
+
+-   for each carrier and month, calculate total number of flights.
+
+    ```{r}
+    df%>%
+      group_by(UniqueCarrier,Month)%>%
+      summarise(Vuelos_pc_pm=n())
+
+    ```
+
+-   then normalize total number of flights (divide each value with maximum total number of\
+    flights, you must get values between 0 and 1!)
+
+    ```{r}
+    df%>%
+      group_by(UniqueCarrier,Month)%>%
+      summarise(Vuelos_pc_pm=n())%>%
+      summarise(Vuelos_norm=Vuelos_pc_pm/max(Vuelos_pc_pm))%>%
+      group_by(UniqueCarrier)%>%
+      pivot_wider(names_from= Vuelos_norm,
+                  values_from = UniqueCarrier)
+
+      
+    ```
+
+<!-- -->
+
+-   now pivot your table from long to wide format
+
+-   so each row is represented with carrier, and each column is represented with month,\
+    normalized total number of flights are values in table cells
+
+##### *Video Solution*
+
+```{r}
+df%>%
+  select(carrier=UniqueCarrier,
+         month)%>%
+  group_by(carrier,month)%>%
+  summarise(flights=n())%>%
+  ungroup()%>%
+  mutate(max_flights= max(flights),
+         flights_norm=flights/max_flights)%>%
+  select(carrier, month, flights_norm)%>%
+  pivot_wider(names_from = month,
+              values_from = flights_norm,
+              values_fill = 0)
+```

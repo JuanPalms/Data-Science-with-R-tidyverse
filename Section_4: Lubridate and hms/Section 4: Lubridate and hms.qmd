@@ -1,0 +1,234 @@
+---
+title: "Section 4: Lubridate and hms"
+author: "Juan Palmeros"
+format: html
+editor: visual
+---
+
+## Date/times
+
+date(2021-12-31) --- will be stored as the number of days since 1970-01-01
+
+time(12:00:00) an hms is a time stored as the number of seconds since 00:00:00
+
+date-time (2021-12-31 12:00:00) -- is a point on the timeline, stored as the number of seconds since 1970-01-01 00:00:00
+
+How each is created
+
+d\<-as_date(18992)
+
+t\<- hms::as_hms(120)
+
+dt\<-as_datetime(1640952000)
+
+```{r}
+library(tidyverse)
+library(hms)
+library(lubridate)
+library(nycflights13)
+```
+
+```{r}
+d<-as_date(19357)
+d
+```
+
+Minutes after midnigth
+
+```{r}
+t_m<-as_hms(360)
+t_m
+```
+
+```{r}
+dt<-as_datetime(1640952000)
+dt
+```
+
+Parse helper functions
+
+str or number conversion
+
+```{r}
+fecha1<-"2021-12-31 12:00:00"
+fecha1
+```
+
+2021-12-31 12:00:00 ---- ymd_hms() or 2021-12-31 12:00 ---ymd_hm() 2021-12-31 12 ymd-h()
+
+```{r}
+fecha2<-ymd_hms(fecha1)
+fecha2%>%class()
+```
+
+```{r}
+ymd_hm("2021-12-31 12:00")%>%
+  class()
+```
+
+In this case lubridate was expecting also the minute input but it wasn't found
+
+```{r}
+ymd_hm("2021-12-31 12")
+```
+
+```{r}
+ymd_h("2021-12-31 12")
+```
+
+2021-31-12 11:30:00 ---- ydm_hms()
+
+12/31/2021 3:05:05 ---- mdy_hms()
+
+31 Dec 2021 22:15:00 --- dmy_hms()
+
+20211231 --- ymd() 20213112 --- ydm()
+
+2021:Q4 ---- yq()
+
+1:05:03 --- hms()
+
+```{r}
+"31 Dec 2021 22/15:00"
+```
+
+```{r}
+dmy_hms("31 Dec 2021 22/15:00")
+```
+
+```{r}
+yq("2022/ q3")
+```
+
+```{r}
+hms::hms(seconds=5, minutes=1, hours=0)
+```
+
+```{r}
+lubridate::hms("00:01:05")
+```
+
+### Other functions
+
+date_decimal(..) --- Parse the date given in decimal value
+
+```{r}
+## Parse date stored as decimal number
+
+d<- seq(2021, 2022, 0.085)
+d
+```
+
+```{r}
+date_decimal(d)
+```
+
+fast_strptime(...) --- Parse input string into POSICxt date-time object.
+
+```{r}
+fast_strptime(x="2021-12-31 12:00:00", format="%Y-%m-%d %H:%M:%S")  #need to specify the format
+```
+
+parse_date_time(...) --- Parse allowing strptime with simpler formats
+
+```{r}
+parse_date_time(x="2021-12-31 12:00:00",  orders="ymd HMS")  #less strick than fast_strptime
+```
+
+### Individual components/ existing objects
+
+This is useful when dealing with separate components of the same time
+
+make_date() --- for dates
+
+```{r}
+flights
+```
+
+make_date_time ---- for date and time
+
+```{r}
+flights%>%
+  select(year, month, day, hour, minute)%>%
+  mutate(datetime=make_datetime(year, month, day, hour, minute), 
+         date=make_date(year, month, day))
+
+```
+
+now() --- get the current date time at the moment
+
+```{r}
+now()
+```
+
+today() ---- today\`s date
+
+```{r}
+today()
+```
+
+Conversion
+
+```{r}
+as_date(now())
+```
+
+```{r}
+as_datetime(today())
+```
+
+Different codes for datetimes coponents:
+
+%d Day of the month (decimal number)
+
+%a Abbreviated weekday
+
+%Month (decimal number)
+
+%A Full weekday
+
+%b Month abbreviated
+
+%I Decimal day of the year
+
+%B Month (full name)
+
+%j Decimal day of the year
+
+%y Year (4 digits)
+
+%W Decimal week of the year (starting on Monday)
+
+### Components
+
+Extracting an specific part of a date
+
+x= 2021-12-31 11:30:00
+
+date(x) ---2021-12-31
+
+year(x) --- 2021
+
+month(x) --- 12
+
+day(x) ---31
+
+wday(x) ---- day of the week \| qday(x) ---- day of the quarter
+
+hour(x) ----11:30:00
+
+minute(x) ---30
+
+second(x) ----- 00
+
+week(x)\-\-\-- gives the number of the week
+
+quarter(x)\-\-- 4th = the quarter of the week
+
+semester(2nd) ---- returns the semester of the year
+
+am(x) --- returns true if it is in the am time.
+
+pm(x) ---- returns true if it is in the pm time.
+
+leap_year(x) know if there is anio bisiesto

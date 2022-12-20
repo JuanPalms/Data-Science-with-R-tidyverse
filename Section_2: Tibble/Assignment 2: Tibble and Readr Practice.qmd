@@ -1,0 +1,217 @@
+---
+title: "Assignment 2: Tibble"
+author: "Juan Palmeros"
+format: html
+editor: visual
+---
+
+## Description
+
+In this Quarto document I deliver the assignment 2 in the *Data Science with R: Tidyverse* program.
+
+## Exercise 1
+
+In this exercise you will create a tibble called continents. After you have created a tibble use it to calculate given table summaries: Total area Total population Sum of percentage - total landmass Sum of percentage - total population
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+exercise_1<-tibble(
+  `Date (data published)`=seq.Date(from=as.Date("2017-11-10"),
+                                   to=as.Date("2017-11-10"),
+                                   length.out = 7),
+  `Continent`=c("Africa","Antartica","Asia","Europe","North America","South America","Australia"),
+  `Area (km2)`=c(30370000,14000000,44579000,10180000,24709000,17840000,8600000),
+  `Population per continent`=c(1287920000,4490,4545133000,742648000,587615000,428240000,41264000)
+)
+exercise_1
+```
+
+Adding Percent total landmass and Percent total pop
+
+```{r}
+exercise_1<-exercise_1%>%
+          mutate(`Percent total landmass`=(`Area (km2)`/sum(`Area (km2)`))*100,
+                 `Percent total pop`=`Population per continent`/sum(`Population per continent`)*100
+                 
+                 
+                 )
+```
+
+Calculating total area and total population
+
+```{r}
+tabla_resultados<- exercise_1%>%
+  summarise(`Total_area`=sum(`Area (km2)`),
+            `Total population`=sum(`Population per continent`),
+            `Sum of percentage landmass`=sum(`Percent total landmass`),
+            `Sum of percentage total population`=sum(`Percent total pop`)
+            
+            
+            )
+tabla_resultados
+```
+
+## Exercise 2
+
+In this exercise you will import .csv file called flights 02.csv, which is located in zip file. When you are importing the file, try to consider the following:
+
+-   assign imported object to R object named df2
+
+-   for importing use function from library readr
+
+-   inside function for importing, define column parsing
+
+-    maybe you should inspect the .csv file before actual import
+
+-   after the import, check structure of df2 object with str()
+
+```{r}
+df2<- read_csv(file="./Data/data_import/flights_02.csv",
+               col_types = cols(
+                 "UniqueCarrier"=col_factor(),
+                 "FlightNum"=col_integer(),
+                 "Year"=col_integer(),
+                 "Month"=col_integer(),
+                 "DayofMonth"=col_integer(),
+                 "Origin"=col_character(),
+                 "Dest"=col_character(),
+                 "Distance"=col_integer()
+               ))
+df2
+```
+
+Inspect the structure with str()
+
+```{r}
+str(df2)
+```
+
+## Exercise 3
+
+Now you will import .csv file called flights 03.csv. When you are importing the file, you should consider the following:
+
+-   Assign imported object to R object named df3
+
+-   For importing use function from library readr
+
+-   Inspect the .csv file before actual import
+
+-   Function for import should include some additional import strategies (compared to previous example!)
+
+    HINT: at the point of import: maybe you should parse all columns as characters (col types = cols(.default = "c")) HINT: then inside R you can convert column types and add column names, after the import operation is executed
+
+-   After the import, check structure of df3 object with str()
+
+```{r}
+df3<-read_delim(file="./Data/data_import/flights_03.csv",
+              col_types = cols(.default = "c"),
+              delim = "|",
+              col_names = F,
+              comment = "#",
+              skip = 12)
+```
+
+```{r}
+df3
+```
+
+Old names
+
+```{r}
+colnames(df3)
+```
+
+Renaming columns
+
+```{r}
+df3 <- rename(df3, 
+             UniqueCarrier=X1,
+             FlightNum=X2,
+             Date=X3,
+             Origin=X4,
+             Dest=X5,
+             Distance=X6)
+colnames(df3)
+```
+
+Parsing appropriate column types
+
+```{r}
+df3<-df3%>%
+        mutate_at(.vars=c("UniqueCarrier","Origin","Dest"), .funs=as.character)%>%
+        mutate_at(.vars=c("FlightNum","Distance"), .funs=as.integer)%>%
+        mutate(Date=as.Date(Date))
+```
+
+Check the structure
+
+```{r}
+str(df3)
+```
+
+## Exercise 4
+
+In the last exercise you will import .csv file called flights 04.csv, which is a larger flat file with several million rows:
+
+-   Import file two times using readr library and data.table's fread
+
+-   When importing with readr do column parsing at the point of import
+
+-   When importing with fread force all columns to be parsed as characters (colClasses = "character")
+
+-   Compare execution times for each importing strategy
+
+```{r}
+read_csv2(file="./Data/data_import/big_table_04.csv",
+         col_types = cols(
+           word=col_factor(),
+           logical=col_logical(),
+           date=col_date(format = "%Y-%M-%D"),
+           integer=col_integer(),
+           double=col_number()
+         )
+         )
+```
+
+Check the time
+
+```{r}
+system.time(
+read_csv2(file="./Data/data_import/big_table_04.csv",
+         col_types = cols(
+           word=col_factor(),
+           logical=col_logical(),
+           date=col_date(format = "%Y-%M-%D"),
+           integer=col_integer(),
+           double=col_number()
+         )
+         )
+)
+
+```
+
+Import with fread
+
+```{r}
+library(data.table)
+```
+
+```{r}
+fread(file="./Data/data_import/big_table_04.csv",
+      colClasses ="character"
+      )
+```
+
+Check execution time
+
+```{r}
+system.time(
+  
+  fread(file="./Data/data_import/big_table_04.csv"
+      )
+  
+)
+```

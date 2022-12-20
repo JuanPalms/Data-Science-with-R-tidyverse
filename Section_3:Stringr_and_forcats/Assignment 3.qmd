@@ -1,0 +1,345 @@
+---
+title: "Assignment 3: Forcats and regex"
+author: "Juan Palmeros"
+format: html
+editor: visual
+---
+
+## Assignment 3 Forcats and regex
+
+## Exercise 1
+
+First import corpus.txt into R. Use function readLines() for import, assign imported corpus\
+to R object.
+
+```{r}
+library("tidyverse")
+```
+
+```{r}
+getwd()
+```
+
+```{r}
+corpus<-readLines("/home/juanpalms/R_tidyverse/Data/corpus.txt")
+```
+
+Check number of lines in corpus
+
+```{r}
+length(corpus)
+```
+
+Check number of characters
+
+```{r}
+#| echo: false
+str_length(corpus)%>%
+  sum()
+```
+
+Print first and last six lines
+
+```{r}
+corpus%>%head()
+corpus%>%tail()
+```
+
+```{r}
+str_sub(corpus, start=1, end=6)
+```
+
+Now use regular expressions and tools provided by stringr library to finish given tasks:
+
+Count how many lines include at least one punctuation
+
+```{r}
+corpus%>%
+  str_detect(pattern ="[:punct:]")%>%
+  sum()
+```
+
+Show first 20 lines without any punctuation
+
+```{r}
+str_view_all(string=corpus, pattern="[:punct:]",match = FALSE)
+```
+
+Count how many lines include at least one number / digit
+
+```{r}
+length(str_subset(corpus, pattern = "[:digit:]"))
+```
+
+```{r}
+corpus%>%str_subset(pattern = "[:punct:]", negate=T)%>% head(20)
+```
+
+Inspect first 10 lines with digit present
+
+```{r}
+str_subset(corpus, pattern = "[:digit:]")%>%head(10)%>%str_view_all(pattern= "[:digit:]")
+```
+
+Find string patterns that resemble phone numbers (search for patterns: ddd-dddd where\
+d = digit 0-9
+
+```{r}
+patron<-"\\d\\d\\d-\\d\\d\\d\\d"
+str_subset(corpus, pattern=patron)%>%
+  str_view_all(patron)%>%length()
+```
+
+Find string patterns that resemble dollar signs "\$" (escaping needed)
+
+```{r}
+str_subset(corpus, pattern="\\$")%>%
+  length()
+```
+
+How many lines starts with word "The"?
+
+```{r}
+length(str_subset(corpus, pattern="^The"))
+```
+
+## Exercise 2
+
+Continue with strings manipulations:
+
+-   use corpus and try to figure out which words usually come before comma ","
+
+    ```{r}
+    str_subset(string = corpus, pattern = "\\w+,")%>%length()
+    ```
+
+    ```{r}
+
+    pattern<-"\\w+,"
+    counts<-corpus%>%
+      str_extract(pattern)%>%
+      str_to_lower(.)%>%
+      str_remove(pattern=",")%>%
+      tibble(pattern=.)%>%
+      count(pattern)%>%
+      arrange(desc(n))
+      
+    ```
+
+    ```{r}
+    counts
+    ```
+
+-   if you consider first 5 letters at the beginning of each line, what are the top patterns that
+
+    lines start with?
+
+```{r}
+corpus%>%
+  str_to_lower(.)%>%
+  str_sub(1,3)%>% #xtract first 5 characters
+  tibble(pattern=.)%>%
+  count(pattern)%>%
+  arrange(desc(n))
+  
+```
+
+```{r}
+corpus.df<-as.data.frame(corpus)
+```
+
+```{r}
+corpus.df%>%
+  mutate(`first 5 letter`=str_sub(corpus, 1, 3))%>%
+  count(`first 5 letter`)%>%
+  arrange(desc(n))
+```
+
+find words where: a vowel is followed by a vowel
+
+```{r}
+vowels<-"a|e|i|o|u"
+pattern_a<-paste0("(",vowels,")","(?=",vowels,")")
+corpus%>%str_to_lower(.)%>%
+  str_subset(pattern_a)%>%
+  str_view_all(pattern_a)
+  
+  
+```
+
+```{r}
+pattern_b <- paste0("(",vowels, ")", "(?=", "(",vowels, ")", "{2,}",")")
+corpus%>%
+  str_to_lower(.)%>%
+  str_subset(pattern_b)%>%
+  str_view_all(pattern_b)
+```
+
+```{r}
+pattern_c <- paste0("(", vowels, ")", "(?=", "(", vowels, ")", "{3,}",")")
+corpus%>%
+  str_to_lower(.)%>%
+  str_subset(pattern_c)%>%
+  str_view_all(pattern_c)
+```
+
+Check occurrences of words "the", "be", "to", "of" ,"and"
+
+```{r}
+corpus.low<-corpus%>%str_to_lower(.)
+```
+
+Function for counting occurrences
+
+```{r}
+fcount<-function(word){
+  return( corpus.low%>%
+    str_count(pattern = word)%>%
+    sum())
+}
+```
+
+```{r}
+most.common.words<-tribble(
+  ~word, ~count,
+  "the", fcount("the"),
+  "be",  fcount("be"),
+  "to",  fcount("to"),
+  "off",  fcount("off"),
+  "and", fcount("and")
+  
+)
+```
+
+```{r}
+most.common.words
+```
+
+Top 3 most common words check
+
+a\) Number of lines only one word is present
+
+```{r}
+tibble(text=corpus.low)%>% #put corpus in a tibble to add flags
+  mutate(the=str_detect(text, pattern="the"),
+         be=str_detect(text, pattern="be"),
+         to=str_detect(text, pattern="to"))%>%
+  mutate(`how many present?`=the+be+to)%>%
+  group_by(`how many present?`, the, be, to)%>%
+  summarise(`nr lines`=n()) %>%
+  ungroup()%>%
+  mutate(`% of lines`=round(`nr lines`/sum(`nr lines`)*100,1))%>%
+  arrange(desc(`how many present?`))
+
+
+```
+
+## Exercise 3: cleaning the corpus
+
+```{r}
+clean.corpus<- corpus%>%
+  str_to_lower(.)%>%
+  str_remove_all(pattern = "[:punct:]")%>%
+  str_remove_all(pattern = "[:digit:]")%>%
+  str_replace_all(pattern = "\t|\n", replacement= " ")%>%
+  str_trim(side="both")%>%
+  str_replace_all(pattern="\\s{2,}", replacement = " ")
+```
+
+Use clean corpus and create:
+
+```{r}
+#first column is word, second column is count
+
+corpus.words<-clean.corpus%>%
+  str_c(sep=" ", collapse = " ")%>%
+  str_split(pattern= " ")%>%
+  unlist()%>%
+  tibble(word=.)%>%
+  group_by(word)%>%
+  summarise(count=n())%>%
+  ungroup()%>%
+  arrange(desc(count))
+```
+
+```{r}
+corpus.words<-corpus.words%>%
+  mutate(percentage=count/sum(count)*100)
+```
+
+```{r}
+corpus.words
+```
+
+```{r}
+corpus.words%>%
+  nrow()
+```
+
+```{r}
+#how much text covered with the most frequent words
+
+corpus.words%>%slice(1:15)%>%
+  pull(3)%>%
+  sum()
+```
+
+How much words in order to cover 50%, 70% and 90% of words
+
+```{r}
+corpus.words<- corpus.words%>%
+mutate(`% coverage cumsum`=cumsum(`percentage`))
+```
+
+```{r}
+corpus.words%>%filter(`% coverage cumsum`<50)%>%nrow()
+```
+
+```{r}
+corpus.words%>%filter(`% coverage cumsum`<70)%>%nrow()
+```
+
+```{r}
+corpus.words%>%filter(`% coverage cumsum`<90)%>%nrow()
+```
+
+```{r}
+corpus.words%>%
+  mutate(position=row_number())%>%
+  ggplot(aes(x=position,
+             y=`% coverage cumsum`))+
+  geom_area(color="black", fill="gray80")+
+  ylab("Word count")+
+  ylab("Text-corpus % covered")
+```
+
+## Exercise 4
+
+```{r}
+set.seed(345)
+
+corpus.word.top100<-corpus.words%>%
+  .[1:100,]%>%
+  mutate(prob=count/sum(count))%>%
+  sample_n(tbl=., size=1000, replace=T, weight=prob)%>%
+  select(word)
+```
+
+```{r}
+corpus.word.top100<- corpus.word.top100%>%
+  mutate(word=as.factor(word))
+```
+
+```{r}
+corpus.word.top100%>%
+  pull(word)%>%
+  fct_unique()
+```
+
+```{r}
+corpus.word.top100%>%
+  count(word)%>%
+  ggplot(aes(x=word,
+             y=n))+
+  geom_col()
+```

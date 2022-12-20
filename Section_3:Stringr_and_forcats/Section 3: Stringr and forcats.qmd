@@ -1,0 +1,1335 @@
+---
+title: "Section 3: Stringr"
+author: "Juan Palmeros"
+format: html
+editor: visual
+---
+
+# Data wrangle: strings and factors
+
+## Strings essentials
+
+To define a string inside R you can use 'single' or "double quotes"
+
+Special characters are escaped with backslash "\\" ("\\n" - new line, "\\t" -tabulator)
+
+```{r}
+library(tidyverse)
+```
+
+Create strings
+
+```{r}
+#double quotes
+s1<- "string"
+#single quotes
+s2<-'string2'
+
+s1
+s2
+```
+
+Generating a vector of characters
+
+```{r}
+#vector of strings
+vec<- c("a","b","c")
+vec
+```
+
+Generate a character vector inside tibble
+
+```{r}
+df<-tibble(letters=vec)
+df
+```
+
+Special characters and escaping
+
+```{r}
+"\""
+#new line
+"\n"
+#tabulator
+"\t"
+#Unicode non-english letters
+"\u03B1" #displays alpha
+```
+
+See raw content of your string
+
+```{r}
+s<-"string"
+s
+writeLines(s) #displays the content witouht the double quote
+```
+
+```{r}
+s<- "line 1 \nline 2 \t\tline3"
+writeLines(s)
+```
+
+```{r}
+
+```
+
+#### Useful tidyverse string functions
+
+```{r}
+#load strings dataset
+load("/home/juanpalms/R_tidyverse/Data/strings.RData")
+```
+
+str_detect()
+
+-   Detect a pattern match inside give string:
+
+-   str_detect(string, pattern) \_ returns a boolean
+
+Find a fruit containing letter "a" anywhere
+
+```{r}
+#in base R---- grepl()
+fruit
+```
+
+```{r}
+#pass the detection to an object
+ind<-str_detect(fruit,pattern="a")
+```
+
+```{r}
+#subset values from vector 
+fruit[ind]
+```
+
+Old way in R base
+
+```{r}
+grepl(pattern="a",x=fruit)
+```
+
+Find a fruit not containing any letter "a"
+
+```{r}
+ind2<-str_detect(fruit, pattern="a", negate=T)
+```
+
+```{r}
+fruit[ind2]
+```
+
+```{r}
+#inside a tibble add flag that fruit contains letter "a" or doesnt
+
+fruit.df%>%
+  mutate(flag=case_when(str_detect(string=fruit,pattern="a") 
+                        ~ "Contains 'a'", T ~ "Does not contain 'a'"))
+```
+
+str_which()
+
+-   Locate the indexes of strings, which contain a pattern match
+
+-   str_which(string,pattern) -returns the position
+
+```{r}
+indices<-str_which(string=fruit, patter="a")
+```
+
+slicing
+
+```{r}
+fruit[indices]
+```
+
+str_count()
+
+-   Count the number of pattern matches in given string
+
+-   str_count(string, patterm)
+
+```{r}
+fruit.df1<-fruit.df%>%
+  mutate(`count of "a"`=str_count(string=fruit, pattern="a"))
+fruit.df1
+```
+
+show me all fruits containing letter a 3 times
+
+```{r}
+fruit.df1%>%
+  filter(`count of "a"`>=3
+    
+  )
+```
+
+str_locate()
+
+-   Locate the first position of patter match given the string
+
+-   str_locate(string,pattern) -\> returns two pieces of info: star (where the match in the string starts) end (where the match in the string ends).
+
+```{r}
+#Locate position of first occurence of letters "a"
+str_locate(fruit, patter="a")
+```
+
+```{r}
+fruit.df1<- str_locate(fruit, pattern="ap")%>%
+  as_tibble()%>%
+  mutate(fruit= fruit)%>%
+  select(fruit, start, end)
+
+fruit.df1
+  
+```
+
+str_locate_all
+
+-   Locates all the positions of the match in the string pattern
+
+```{r}
+str_locate_all(fruit,pattern="a")
+```
+
+#### String subsetting
+
+str_sub()
+
+-   str_sub(string, star, end)
+
+-   Extract part of a string from a character vector
+
+```{r}
+#Base R-> substr()
+#extract 3 first letters of a fruit
+str_sub(fruit, start=1, end=3)
+
+```
+
+Extract first letter of a common word and count word frequency by first word letter
+
+```{r}
+words.df%>%
+  mutate(`first letter`=str_sub(word, 1, 1))%>%
+  count(`first letter`)%>%
+  arrange(desc(n))
+```
+
+Extract middle part of the word of a string
+
+```{r}
+str_sub(fruit,3,5)
+```
+
+Extract last letter
+
+```{r}
+str_sub(fruit,start=-1,end=-1)
+```
+
+Extract last 3 letters
+
+```{r}
+str_sub(fruit, start=-3, end=-1)
+```
+
+str_subset()
+
+Return only the string that contain a pattern match- performs the filtering over str_detect()
+
+```{r}
+#Extract all the fruits tha have at least one letter c
+str_subset(fruit, pattern="c")
+```
+
+```{r}
+#same but with detect
+fruit[str_detect(string = fruit, pattern="c")]
+```
+
+str_extract/ str_extract_all
+
+-   Returns the pattern match as a vector, goes an step further than str_locate() and str_locate_all() by performing the filtering
+
+```{r}
+#Return fruit containing letter "a" first ocurrence
+str_extract(fruit, pattern = "a") #only first ocurrence
+```
+
+```{r}
+#how many occurences of letter a?
+str_extract_all(fruit, patter="a")
+```
+
+str_match()/ str_match_all()
+
+-   Returns the first patter match found
+
+```{r}
+#extract the first occurence of "a" but in a matrix form
+str_match(fruit, pattern="a")
+```
+
+```{r}
+#extract all teh ocurrences of letter "a" but in matrix form
+str_match_all(fruit, pattern = "a")
+```
+
+## str_length
+
+str_length()
+
+-   Return the width of the strings(number of characters)
+
+-   str_length(string)
+
+Find the length of fruit names
+
+```{r}
+#base r: nchar()
+str_length(string=fruit)
+
+```
+
+Get all fruit with 10 or more characters for fruit name
+
+```{r}
+fruit[str_length(string = fruit)>=10]
+```
+
+str_pad()
+
+-   String padding to get string with equal length! Unify the length of the string by adding elements
+
+-   str_pad(string, width, side=c("left","right","both"),pad="")
+
+Pad fruits names with symbol "x" to get string with width 20 characters, in other words we want all the fruits have 20 characters, otherwise we will fill the gap with x
+
+```{r}
+str_pad(fruit, width=20, side="both", pad="x")
+```
+
+str_trunc()
+
+-   str_trunc(string,width,side=c("left","right","center"), ellipsis="..")
+
+-   ellipsis specify which characters will be removed.
+
+Truncate the width of strings, unify the length of strings by shortening it
+
+```{r}
+#Truncate fruit names to get string with maximum width=5 characters
+str_trunc(fruit, width=5, side = "right", ellipsis = ".")
+```
+
+str_trim()
+
+Removes/trims whitespaces from star and/or end of the string
+
+str_trim(string,side=c("left","right","both"))
+
+```{r}
+#Create a string with white spaces
+whitespace<-c("nospace",
+              " leftspace",
+              "rigthspace ",
+              "rigthspaces  ",
+              " bothspaces ",
+              "middle space",
+              " mix spaces "
+              )
+str_length(whitespace)
+```
+
+Trimming white spaces from left
+
+```{r}
+str_trim(whitespace, side="left")%>%
+  str_length()
+```
+
+Trimming from right
+
+```{r}
+str_trim(whitespace, side="right")%>%
+  str_length()
+```
+
+Trimming from both sides
+
+```{r}
+str_trim(whitespace, side="both")%>%
+  str_length()
+```
+
+## Mutating strings
+
+str_sub()
+
+-   Using str_sub() but not only for retrieving a pattern but assign that pattern to a new string
+
+-   str_sub(string, start,end)\<- "new string"
+
+Replace first 3 letters of each fruit name with "FRU"
+
+```{r}
+fruit.sub<-fruit
+str_sub(fruit.sub, start=1, end=3)<-"FRU"
+fruit.sub
+```
+
+str_replace()
+
+-   Replaces the first matched pattern in each string
+
+```{r}
+#Replace first occurence of letter "a" with "A"
+str_replace(fruit, pattern="a",replacement = "A")
+
+```
+
+str_replace(string, pattern, replacement)
+
+-   str_replace_all(string, pattern, replacement)
+
+-   All the matching patterns in a string will be replaced
+
+```{r}
+#Replace all matched patterns of "b" by "B"
+str_replace_all(fruit, pattern = "b",replacement = "B")
+```
+
+str_to_lower()
+
+Converts strings into lower case
+
+```{r}
+string.uppercase<-"THIS IS A STRING"
+string.uppercase
+```
+
+```{r}
+str.lower<-str_to_lower(string.uppercase)
+str.lower
+```
+
+str_to_upper()
+
+Converts string to upper case
+
+```{r}
+str_to_upper(str.lower)
+```
+
+str_to_title()
+
+Converts the first character to Upper the next ones to lower case
+
+```{r}
+str.title<- str_to_title(str.lower)
+str.title
+```
+
+### Joining and splitting strings
+
+str_c(....,sep="",collapse=NULL)
+
+Join multiple strings into a single string
+
+```{r}
+#create an example: split a vector fruit into 4 equal in size smaller vectors
+fruit1<- fruit[1:20]
+fruit2<-fruit[21:40]
+fruit3<-fruit[41:60]
+fruit4<-fruit[61:80]
+```
+
+```{r}
+str_c(fruit1,fruit2,fruit3, fruit4, sep="-")
+```
+
+str_c(...,sep="", collapse="")
+
+Create a vector of alphabet letters, one lower and one upper case
+
+```{r}
+letters
+```
+
+```{r}
+Letters
+```
+
+```{r}
+str_c(letters,Letters, sep=" ")
+```
+
+Collapse a vector of strings into a single string
+
+str_dup(string, times)
+
+Repeat a string multiple times
+
+```{r}
+#repeat one string 5 times
+str_dup(string="word\\", times=5)
+```
+
+Repeat a vector of strings two times
+
+```{r}
+str_dup(fruit1, 2)
+```
+
+str_split_fixed(string, pattern,n) / str_split
+
+Split a vector of string into a matrix of substrings (str_split -returns a list of substrings!)
+
+```{r}
+#split fruit by whit spaces
+str_split_fixed(string=fruit, pattern=" ", n=2)
+```
+
+```{r}
+
+#split first five sentences by white space and increase  n 
+str_split_fixed(sentences, pattern=" ", n=10 )
+```
+
+Split a vector of strings into a list /matrix of substrings based on pattern
+
+```{r}
+#Split first 5 setnences by space
+str_split(sentences[1:5],pattern=" ")
+```
+
+str_glue()
+
+Merge together strings and {expressions}
+
+Merge string and evaluated mathematical symbol
+
+```{r}
+str_glue("What is the value of sqrt(2), it is {round(sqrt(2),3)}")
+```
+
+```{r}
+name<-"Juan"
+str_glue("hi my name is {name}")
+```
+
+str_glue_data()
+
+Use a data frame, list or environment to create a string from strings and expressions
+
+```{r}
+#Merge string and values from a df
+
+mtcars
+str_glue_data(mtcars, "The car {rownames(mtcars)}: {hp} horsepower, {cyl}: number of cylinders and comsumption {mpg} miles per gallon")
+```
+
+### xOther string helper functions
+
+str_order(x, decreasing=F, numeric=F, ...)
+
+Return a vector of indexes after character vector is sorted
+
+```{r}
+#Lets first shuffle fruit to get them in random number
+set.seed(123)
+
+fruit.shuf<-sample(x=fruit, size=length(fruit), replace=F)
+fruit.shuf
+```
+
+```{r}
+#It displays the position
+str_order(x=fruit.shuf)
+```
+
+Sort a character vector
+
+```{r}
+fruit.shuf[str_order(x=fruit.shuf)]
+```
+
+str_sort(x, decreasing=F, numeric=F,....)
+
+```{r}
+str_sort(x=fruit.shuf)
+```
+
+Sorting numbers stored as strings
+
+```{r}
+#generating some numbers first then we will sort them
+
+numbers.s<-sample(1:250, size=20, replace=F)
+```
+
+```{r}
+#convert to character
+numbers.s<- as.character(numbers.s)
+```
+
+```{r}
+str_sort(numbers.s)
+```
+
+```{r}
+str_sort(numbers.s, numeric=T)
+```
+
+str_view()/str_view_all()
+
+Very useful HTML rendering function, that display your string and firsta/all regex matches.
+
+```{r}
+##view first match
+str_view(string=fruit, pattern="a")
+
+```
+
+str_view(string, pattern)
+
+```{r}
+#display all the fruits that have an "a"
+str_view(string=fruit, pattern="a", match=T)
+```
+
+Display the words with a at the begining
+
+```{r}
+str_view(string = fruit, pattern = "^a", match=T)
+```
+
+```{r}
+#highligths all teh occurences not only the first one
+str_view_all(string=fruit, pattern="a", match=T)
+```
+
+## REGEX
+
+Get a list of special characters
+
+```{r}
+#displays a list of special characters
+?"'"
+```
+
+escaping paradox
+
+```{r}
+string<- c("string", "word", "letter", "word.letter","character/letter")
+```
+
+Match tr
+
+```{r}
+str_view(string=string, pattern = "tr")
+```
+
+Match ".t." - any character before letter t and any character after letter t
+
+```{r}
+str_view(string = string, pattern=".t.")
+```
+
+How to match "." and not as special character
+
+```{r}
+str_view(string=string, pattern="\\.")
+```
+
+How to match backslash "\\" as char and not as spec character
+
+```{r}
+writeLines("\\")
+```
+
+```{r}
+str_view("\\\\", "\\\\") #double escaping is applied in the pattern ~four \ in total at teh end
+```
+
+### Special characters
+
+Digits vs Non-digits
+
+```{r}
+string<-c(letters, "123", "1-5-6","598642")
+```
+
+Find a string whit digits
+
+```{r}
+str_subset(string,pattern="\\d")
+```
+
+```{r}
+str_view_all(string=string, pattern = "\\d", match=T)
+```
+
+Find strings without digits
+
+```{r}
+#In order to display all the non digits characters, we use \\D
+str_subset(string=string, pattern="\\D")
+```
+
+Find strings with the pattern: "digit-digit-digit"
+
+```{r}
+str_subset(string=string, pattern ="\\d-\\d-\\d" )
+```
+
+```{r}
+str_view_all(string=string, pattern = "\\d-\\d-\\d", match=TRUE)
+```
+
+Locate white spaces
+
+```{r}
+set.seed(123)
+
+string<-c(sample(sentences, size = 5),
+          sample(fruit, size = 5),
+          sample(words, size=5),
+          "This is \n new line",
+          "String with a tab \t"
+          )
+string
+```
+
+```{r}
+writeLines(string)
+```
+
+Locate string with white space one or more
+
+```{r}
+## use \\s to indicate its a space
+str_subset(string=string, pattern="\\s")
+```
+
+```{r}
+str_view_all(string=string, pattern="\\s", match=TRUE)
+```
+
+Locate string with new line in it
+
+```{r}
+str_subset(string=string, pattern="\\n")
+```
+
+Locate string with tab
+
+```{r}
+str_subset(string=string, pattern="\\t")
+```
+
+##### Using different classes
+
+```{r}
+string<- c("123", "abc", "123abc", ".,?", "ABC", "\nABc","\\tabc")
+```
+
+Get the elements of digit class
+
+`{.R .{r}\\}} #Finds all the pieces that have a digitis character {r} str_subset(string=string, pattern="[:digit:]")`
+
+Matching letter
+
+```{r}
+#finds all the matching whit the letters class
+str_subset(string=string, pattern = "[:alpha:]")
+```
+
+Matching upper or lowercase
+
+```{r}
+str_subset(string=string, pattern="[:lower:]")
+```
+
+```{r}
+str_subset(string=string, pattern="[:upper:]")
+```
+
+Matching letters or numbers
+
+```{r}
+str_subset(string=string, pattern="[:alnum:]", negate=FALSE)
+```
+
+Strings with punctuation
+
+```{r}
+str_subset(string=string, pattern = "[:punct:]")
+```
+
+Strings with letters, numbers or punctuation
+
+```{r}
+str_subset(string, "[:graph:]")
+```
+
+Strings with space characters and tabs
+
+```{r}
+str_subset(string, "[:blank:]")
+```
+
+Regex: Alternates anchors and groups
+
+Alternates
+
+\| or
+
+```{r}
+#words tha start with "af" or "ag"
+
+str_subset(words, pattern="^af|ag")
+```
+
+Find words containing letters "x", "y" or "z"
+
+\[\] one of
+
+```{r}
+str_subset(words, pattern="[xyz]")
+```
+
+```{r}
+str_view_all(words, pattern = "[xyz]", match=TRUE)
+```
+
+\[\^\] Anything but
+
+```{r}
+#Find words not containing letters from a to x
+## This is not a sinonyme of finding words that absolutely not contain a-y instead finding words that #have the complement of tha range in it i.e= z, -  ' . 
+str_subset(words%>% str_to_lower(), pattern="[^[a-y]]")
+```
+
+```{r}
+str_view_all(words%>%str_to_lower(), pattern="[^[a-y]]", match=TRUE)
+```
+
+\[-\] Range
+
+Anchors
+
+\^ start of string
+
+```{r}
+#Get a word that strats with a
+str_subset(words, "^a")
+```
+
+```{r}
+str_subset(words, pattern = "^b")
+```
+
+```{r}
+str_view_all(words, "^a")
+```
+
+\$ end of string
+
+```{r}
+#Words tha ends with letter a
+str_subset(words, pattern="a$")
+```
+
+Matching a exact word with regex expressions
+
+"\^....\$"
+
+```{r}
+str_subset(words, pattern="^area$")
+```
+
+```{r}
+str_subset(words, pattern="^actor$")
+```
+
+```{r}
+str_subset(words, pattern="are")
+```
+
+Groups
+
+(ag\|cd) matches all the characters containing those two string groups
+
+```{r}
+## find all country names beginning with letter "A" or "E"
+str_subset(countries, pattern="^A|^E")
+
+```
+
+Find country names ending with letter a or e
+
+```{r}
+str_subset(words, pattern="a$|e$")
+```
+
+Find all the sentences that include the words: "the", "a", or "a"
+
+```{r}
+str_subset(sentences, pattern="(\\sthe\\s|\\sa\\s|\\san\\s)")
+```
+
+```{r}
+str_view_all(sentences, pattern = "(\\sthe\\s|\\sa\\s|\\san\\s)", match=TRUE)
+```
+
+```{r}
+### Find words with repeated pair of letters (twoo letters must be reapeated)- use back reference
+## \\1
+#str_subset(words, pattern="(anyany)\\first")
+str_subset(words, pattern="(..)\\1") #1st is group reference
+
+str_subset(string=fruit, pattern="(..)\\1")
+```
+
+More than one group in back reference
+
+```{r}
+string<- c("abc","acbabc","ababcc","abababccc")
+```
+
+```{r}
+str_view_all(string, pattern = "(a)(b)", match=TRUE) #combination of ab
+```
+
+```{r}
+str_view_all(string, pattern="(a)(b)\\1" ,match=TRUE) #we look for aba because the 1st letter in 
+#the pattern must be repeated
+```
+
+```{r}
+#In order to repeat b in the pattern
+str_view_all(string, pattern="(a)(b)\\1\\2", match = TRUE)
+```
+
+### Look around and quantifiers
+
+LOOK AROUND
+
+.(?=) followed by
+
+```{r}
+#find a word where "w" is followed by letter "a"
+str_subset(words, pattern="w(?=a)")
+```
+
+.(?!) Not followed by
+
+```{r}
+# find a word where letter "w" is not followed by letter "a"
+str_subset(words, pattern = "w(?!a)")
+```
+
+(?\<=). Preceded by
+
+```{r}
+# find a word where letter "a" is preceded by "w"
+str_subset(words, pattern="(?<=w)a")
+```
+
+```{r}
+str_view_all(words, pattern="(?<=w)a", match=TRUE)
+```
+
+(?\<!). Not preceded by
+
+```{r}
+# find a word where letter "a" is not preceded by "w"
+
+str_subset(words, pattern = "(?<!w)a")
+```
+
+```{r}
+str_view_all(words, pattern="(?<!w)a", match=TRUE)
+```
+
+QUANTIFIERS
+
+```{r}
+string<- " .A.AA.AAA.AAAA"
+```
+
+.? Zero or one times
+
+```{r}
+# Zero or one "A"
+str_view_all(string, pattern = "A?", match=TRUE)
+```
+
+.\* Zero or more
+
+```{r}
+# Zero or more "A"s
+str_view_all(string, pattern="A*", match=TRUE)
+```
+
+.+ One or more times
+
+```{r}
+## One or more "A"s
+str_view_all(string, pattern = "A+", match=TRUE)
+#Notice eve if its very subtile the white space is no longer matched
+```
+
+.{n} Exactly n
+
+```{r}
+##Show the words containing excatly two As
+str_view_all(string, pattern = "A{2}", match=TRUE)
+#Notice the part of the character with only one A is no longer matched
+```
+
+.{n,} n or more times
+
+```{r}
+str_view_all(string, pattern = "A{2,}", match=TRUE)
+```
+
+.{2,3} Between n and m
+
+```{r}
+str_view_all(string, pattern="A{2,3}", match= TRUE)
+```
+
+Exercise with sentences:
+
+1\) Count the number of words of each sentence
+
+2\) First remove all punctuation and convert to lower case
+
+3\) Then count the number of words and show results
+
+```{r}
+sentences.df1<- sentences.df%>%
+  mutate(sentence=str_remove_all(sentence,"[:punct:]"),
+         setence=str_to_lower(sentence))%>%
+  mutate(`nr words`=str_count(string=sentence, pattern = "\\s+")+1) #count number of spaces between words
+```
+
+Show the frequencies
+
+```{r}
+sentences.df1%>%count(`nr words`)
+```
+
+Countries with more than 3 words in a country name
+
+```{r}
+countries.df%>%
+  mutate(`nr words`=str_count(country,"\\s+")+1)%>%
+  filter(`nr words`>3)
+```
+
+### Factors
+
+We create factors:
+
+a\) From scratch: factor(x=\<character\>, levels)
+
+b\) by conversion: as_factor(\<character\>)
+
+fct_count()
+
+Count the number of values for each level
+
+fct_count(\<factor\>)
+
+fct_unique()
+
+Returns the unique values and removes the duplicates
+
+```{r}
+## Lets create a factor variable
+df<- mpg%>%
+  mutate_at(.vars=c("manufacturer","model","trans", "class"),
+            .funs=as_factor)
+```
+
+Check the factor levels
+
+```{r}
+df$manufacturer%>%levels()
+```
+
+```{r}
+df%>%.$manufacturer%>%fct_count()
+```
+
+```{r}
+df%>%count(manufacturer)
+```
+
+Visualize frequencies (ggplot)
+
+```{r}
+#using a bar plot
+
+df%>%
+  count(manufacturer)%>%
+  ggplot(aes(x=manufacturer,
+             y=n))+
+  geom_col()
+```
+
+Get unique values for factor variable
+
+```{r}
+df%>%
+  .$manufacturer%>%fct_unique()%>%
+  as.character()
+```
+
+#### Combining and ordering categorical variables
+
+Combine factors with different levels
+
+fct_c(...)
+
+```{r}
+## First split cars into 2 data frames
+manufacturers<- df%>% .$manufacturer%>%
+  fct_unique()%>%as.character() #Unique factor levels
+```
+
+```{r}
+df1<-df%>%
+  filter(manufacturer%in%manufacturers[1:8])
+```
+
+```{r}
+df2<-df%>%
+  filter(manufacturer%in%manufacturers[9:15])
+```
+
+```{r}
+## extract only factor vector
+f1<- df1%>%pull(manufacturer)
+f2<- df2%>%pull(manufacturer)
+```
+
+Manually reorder factor levels
+
+fct_relevel(\<factor\>,\<manual levels\>)
+
+```{r}
+### lets randomly shuffle levels 
+set.seed(478)
+manufacturers.rnd<-sample(manufacturers, size=length(manufacturers), replace=F)
+```
+
+Count frequencies & create another bar plot with manually reordered levels
+
+```{r}
+df%>%
+  mutate(manufacturer=fct_relevel(manufacturer, manufacturers.rnd)) %>%
+  count(manufacturer)%>%
+  ggplot(aes(x=manufacturer,
+             y=n))+
+  geom_col()
+```
+
+Reorder levels by he frequency in which the appear in the data (highest freq first)
+
+fct_infreq(\<factor\>)
+
+```{r}
+df%>%
+  mutate(manufacturer=fct_infreq(manufacturer))%>%
+  count(manufacturer)%>%
+  ggplot(aes(x=manufacturer, 
+             y=n)) +
+  geom_col()
+```
+
+Reorder levels by order in which they appear in the data
+
+fct_inorder(\<factor\>)
+
+```{r}
+#order in which they appear in the data
+df%>%
+  mutate(manufacturer=fct_inorder(manufacturer))%>%
+  count(manufacturer)%>%
+  ggplot(aes(x=manufacturer,
+             y=n))+
+  geom_col()
+```
+
+Reverse level order
+
+fct_rev(\<factor\>)
+
+```{r}
+#reverse alphabetical order
+df%>%
+  mutate(manufacturer=fct_rev(manufacturer))%>%
+  count(manufacturer)%>%
+  ggplot(aes(x=manufacturer,
+             y=n))+
+  geom_col()
+
+```
+
+```{r}
+
+#order in which they appear in the data
+df%>%
+  mutate(manufacturer=fct_infreq(manufacturer))%>%
+  mutate(manufacturer=fct_rev(manufacturer))%>%
+  count(manufacturer)%>%
+  ggplot(aes(x=manufacturer,
+             y=n))+
+  geom_col()
+```
+
+#### Factors change levels and add drop levels
+
+fct_recode()
+
+Manually change levels
+
+fc_recode(\<factor\>, \<new_levels\>)
+
+```{r}
+## first lest pull levels and add country of orgin 
+df%>%pull(manufacturer)%>%fct_count()
+```
+
+```{r}
+levels.country<- tribble(
+  ~company, ~country,
+  "audi", "Germany",
+  "chevrolet", "USA",
+  "dodge", "USA",
+  "ford","USA",
+  "honda","Japan",
+  "hyundai","South Korea",
+  "jeep","USA",
+  "land rover","England",
+  "lincoln","USA",
+  "mercury","USA",
+  "nissan","Japan",
+  "pontiac","USA",
+  "subaru","Japan",
+  "toyota","Japan",
+  "volkswagen","Germany"
+)
+levels.country
+```
+
+Prepare pairs for recoding factor levels
+
+```{r}
+levels.country%>%
+  mutate(recode=str_c(country,"=","'", company, "'", sep=""))%>%
+  pull(recode)%>%
+  str_c(.,collapse=",")
+```
+
+```{r}
+df.recod=df%>%
+  mutate(manufacturer=fct_recode(manufacturer,
+                                 Germany='audi',
+                                 USA='chevrolet',
+                                 USA='dodge',
+                                 USA='ford',
+                                 Japan='honda',
+                                 `South Korea`='hyundai',
+                                 USA='jeep',
+                                 England='land rover',
+                                 USA='lincoln',
+                                 USA='mercury',
+                                 Japan='nissan',
+                                 USA='pontiac',
+                                 Japan='subaru',
+                                 Japan='toyota',
+                                 Germany='volkswagen'))
+```
+
+```{r}
+df.recod%>%
+  count(manufacturer)
+```
+
+fct_collapse()
+
+Collapse levels into manually defined groups
+
+fct_collapse(\<factor\>,\<level groups\>)
+
+```{r}
+###keep only USA companies others are collapsed
+non.US.manufacturers<- levels.country%>%
+  filter(country != "USA")%>%
+  pull(company)
+```
+
+```{r}
+df.collapse<- df%>%
+  mutate(manufacturer=fct_collapse(manufacturer,`non US`=non.US.manufacturers))
+```
+
+```{r}
+df.collapse%>%
+  count(manufacturer)
+```
+
+fct_other(\<factor\>,\<keep levels\>)
+
+```{r}
+## all non US companies are put into other
+df.collapse<- df%>%
+  mutate(manufacturer=fct_other(manufacturer,drop=non.US.manufacturers))
+```
+
+```{r}
+df.collapse%>%
+  count(manufacturer)
+```
+
+fct_drop()
+
+Drop unused levels
+
+```{r}
+##first filter out rows with other level
+df.drop<- df.collapse%>%
+  filter(manufacturer!="Other")
+```
+
+```{r}
+df.drop%>%
+  pull(manufacturer)%>% fct_unique()
+```
+
+```{r}
+df.drop<- df.drop%>%
+  mutate(manufacturer=fct_drop(manufacturer))
+```
+
+fct_expand()
+
+Add levels to a factor
+
+```{r}
+df.expand<- df%>%
+  mutate(manufacturer=fct_expand(manufacturer=c("Ferrari","Lamborghini")))
+```
+
+fct_expand(\<factor\>,\<additional levels\>)
+
+fct_explicit_na()
+
+Assign a level to NAs to ensure they appear in plots

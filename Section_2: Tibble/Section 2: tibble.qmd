@@ -1,0 +1,630 @@
+---
+title: "Tibble"
+format: html
+editor: visual
+---
+
+## Description
+
+This Quarto document displays the content of the Data science with R: Tidyverse section 2: Data Import (readr & tibble) videos. The section assignment is provided in another Quarto document.
+
+## Tibble
+
+Is an enhanced dataframe
+
+```{r}
+library(tidyverse)
+```
+
+How tibbles look like?
+
+Tibble is adaptative it only displays the number of columns that are convenient to display
+
+```{r}
+ggplot2::diamonds
+```
+
+Tibble is a data frame in R structure
+
+```{r}
+class(ggplot2::diamonds)
+```
+
+Quarto documents automatically display data frames as tibbles
+
+```{r}
+hflights::hflights
+```
+
+### How to create a tibble
+
+1\) Option 1
+
+as_tibble(\<data_frame\>)
+
+2\) Option 2
+
+tibble()
+
+```{r}
+tibble(v1=1:10,
+       v2 =10,
+       v3=v1*v2 # we can just refere to preexisting variables without having to use mutate and pipping
+)
+```
+
+### Non-syntactic column names
+
+1\) You are not able to use R reserved names
+
+2\) Don't start a column name with numbers only if using back-ticks:
+
+example: tibble(\` \*\`="star",
+
+\` \`="white space",
+
+\` 3.14\`="pi number"
+
+Create a custom dataframe
+
+```{r}
+df<-data.frame(x=1:10,
+               y=seq.Date(from=as.Date("2021-01-01"),
+                          to= as.Date("2021-01-10"),
+                          by="day"))
+```
+
+```{r}
+class(df)
+```
+
+```{r}
+df<-as_tibble(df)
+```
+
+```{r}
+class(df)
+```
+
+Another custom tibble
+
+```{r}
+tibble(v1=seq(from=1, to=100, by=1),
+       v2=pi,
+       v3=sqrt(v1),
+       v4=seq.Date(from=as.Date("2021-01-01"),
+                   length.out = 100,
+                   by="day"))
+```
+
+Using strange names for columns
+
+```{r}
+#we can use strange names if we put backticks
+tibble(`123`=123,
+       `.`="period",
+       `,`="comma",
+       `,#$5*`="strange name")
+```
+
+### tribble
+
+Transpose tibble
+
+```{r}
+#tribble(~var1, ~var2,
+#        datavar1, datavar2)
+tribble(~v1,~v2,~v3,
+        "X", 1, 10.2,
+        "Y", 2, 5.7,
+        "z", 3, 3.5)
+```
+
+### Subsetting elements
+
+-   Extract variable by name df\$var_name
+
+-   Extract variable by name: df\[\["var_name"\]\]
+
+-   Extract variable by position: df\[\[2\]\]
+
+-   When extracting variables in a pipe a special placeholder is used:
+
+    -   \<data_frame\> %\>% .\$var_name
+
+    -   \<data_frame\> %\>% .\[\[var_name\]\]
+
+    -   or use select or pull
+
+```{r}
+## extract by name -- with $
+#We get a vector
+mpg$model 
+```
+
+```{r}
+#extract by name
+#same as pandas
+mpg[["model"]]
+```
+
+Extract by position of columns
+
+```{r}
+mpg[[2]]
+```
+
+Extract using pipe operator
+
+```{r}
+#We can not use it like this because pipe laready extracts the data frame
+mpg%>%mpg$model
+```
+
+Instead use:
+
+```{r}
+mpg%>%.$model
+```
+
+Or using again the pipe operator
+
+```{r}
+mpg%>%.[["model"]]
+```
+
+Or using again pipe operator
+
+```{r}
+mpg%>%.[[2]]
+```
+
+#### Important: Older R code!
+
+-   Some older R libraries and functions do not work with tibbles!
+
+-   If this hapens convert tibble back to data.frame
+
+as.data.frame(\<data_frame\>)
+
+# Import data with readr
+
+readr provides several functions for parsing ( converting raw data to cleaner data formats)
+
+-   Parse a single vector
+
+-   Parse a column/variable in rectangular data source at import
+
+#### Supported file formats
+
+read_csv() - comma separated (CSV) files
+
+read_tsv()- tab (tabulator) separated flat files
+
+read_delim()- general delimited files
+
+read_fwf()- fixed with file
+
+read_table()- tabular files where columns are separated by whit space
+
+read_log()- web log files
+
+read_csv() -\> ,
+
+read_csv2()-\> :
+
+```{r}
+temp <- list.files(pattern="*.csv")
+map_df(temp, read_delim, delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+## Import files using readr
+
+Import inline csv files
+
+```{r}
+read_csv("c1,c2,c3
+          1,a,T
+         2,b,T
+         3,c,F")
+```
+
+Import files inline with meta header lines
+
+```{r}
+
+read_csv("First meta line
+         Second meta line
+         c1,c2,c3
+          1,a,T
+         2,b,T
+         3,c,F",skip=2) #skip the first two rows
+```
+
+#Inline files with comments
+
+```{r}
+read_csv("First meta line
+         Second meta line
+         c1,c2,c3 #comment 1
+          1,a,T 
+         2,b,T #comment 2
+         3,c,F",skip=2, comment="#") #skip the first two rows
+```
+
+Read CSV from your computer's disk
+
+```{r}
+getwd()
+```
+
+LS the files in a certain directory
+
+```{r}
+list.files(path = "./Data/02_05_read_files")
+```
+
+Small mpg table
+
+```{r}
+df<-read_csv(file="./Data/02_05_read_files/mpg_mini.csv")
+df
+```
+
+small mpg table with a different separator
+
+```{r}
+read_csv2("./Data/02_05_read_files/mpg_mini2.csv")
+```
+
+Read a tab delimited file
+
+```{r}
+df<- read_tsv(file="./Data/02_05_read_files/mpg.tsv")
+df
+```
+
+Read files with selected/Custom delimiter
+
+```{r}
+df<- read_delim(file="./Data/02_05_read_files/mpg_delim.txt", 
+                 delim="~")
+df
+```
+
+Read text files
+
+```{r}
+read_delim(file="./Data/02_05_read_files/mpg.txt",
+           col_names=T, #We tell the read delim we have headers
+           skip=3, # Dont import the first 3 lines
+           skip_empty_rows = T, # There are empy rows in the file
+           quote = "\"",
+           delim=" ")
+```
+
+Read log file
+
+```{r}
+read_log(file="./Data/02_05_read_files/example.log")
+```
+
+Read a large CSV file and check execution time
+
+```{r}
+system.time(
+  df<-read.csv(file="./Data/02_05_read_files/mpg_maxi.csv")
+)
+```
+
+```{r}
+system.time(
+  df<-read_csv(file="./Data/02_05_read_files/mpg_maxi.csv")
+)
+```
+
+## Vector parsing
+
+Parsing happens at the point of import into R space, understanding the process help to reduce the effort in latter cleaning.
+
+You can parse indiviudal vector with functions: parse\_\*()
+
+You can parse individual column with functions like col\_\*() inside read\_\*()
+
+There are different types of parsers:
+
+parse_character()
+
+parse_logical()
+
+parse_integer()
+
+parse_double()/parse_number()
+
+parse_factor() - categorical varaibles parser
+
+parse_date()/parse_time()/parse_datetime()
+
+When encountering problems -\> you can use the problem() function
+
+### vector parsing readr
+
+```{r}
+parse_character(c("one","two","3"))
+```
+
+Parse logical
+
+```{r}
+parse_logical(c("T","True","F","False","NA"))%>%class()
+```
+
+### Problems with parsing
+
+```{r}
+x<-parse_logical(c("T","True","F","False","NA","String"))
+problems(x) #use problems() in order to get the conflictc in parsing
+```
+
+Parsing an integer
+
+```{r}
+parse_integer(c("10","15","20","1.53"))
+#It displays a problem
+```
+
+Parsing a factor
+
+```{r}
+parse_factor(c("a","a","b"),levels=c("b","a"))
+```
+
+Parse double
+
+```{r}
+parse_double(c("1.2","1.44"))
+```
+
+What if I use a comma for separiting doubles
+
+```{r}
+parse_double(c("1,2","1,44"))
+#it displays an error because of the comma
+```
+
+Finxing it
+
+```{r}
+parse_double(c("1,2","1,44"),
+             locale =locale(decimal_mark = ","))
+```
+
+Parsing numbers
+
+```{r}
+parse_number(c("1","2.2","$10","5%","4}","1,000"))
+```
+
+Specify grouping marks
+
+```{r}
+parse_number(c("1,000.5"),
+             locale = locale(grouping_mark = ",")) #R do it by itself but you can especify something to it
+```
+
+Parsing dates
+
+```{r}
+parse_date("2021-01-31")%>%class()
+```
+
+Specify date format
+
+```{r}
+parse_date("20211031",format = "%Y%m%d")
+```
+
+```{r}
+parse_date("21/01/31", format="%y/%m/%d")
+```
+
+Parse time
+
+```{r}
+parse_time("00:01")
+parse_time("00:01 am")
+parse_time("00:01:00")
+```
+
+```{r}
+parse_datetime("2021-01-31 00:01:00")
+```
+
+## Parsing files
+
+read_csv(table.csv,
+
+col_types=cols(
+
+col1=col_integer(),
+
+col2=col_character(),
+
+col3=col_double()
+
+))
+
+parse_guess() will make it best guess for the types
+
+```{r}
+guess_parser(c("T","F")) #Tells you the type R guessses
+```
+
+Sometimes might get wrong
+
+```{r}
+guess_parser(c("T","T","string"))
+```
+
+#### Parsing a file
+
+```{r}
+mpg_df<-read_tsv(file="./Data/02_05_read_files/mpg.tsv")
+#notice that cyl must be stored as an integer bc this will consume less memory
+```
+
+```{r}
+colnames(mpg_df)
+```
+
+Parse each column in mpg table
+
+```{r}
+read_tsv(file="./Data/02_05_read_files/mpg.tsv",
+         col_types = cols(
+            "manufacturer"=col_factor(),
+            "model"=col_factor(),
+            "displ"=col_double(),
+            "year"=col_integer(),
+            "cyl"=col_integer(),
+            "trans"=col_character(),
+            "drv" =col_character(),
+            "cty"=col_number(),
+            "hwy"=col_double(),
+            "fl"=col_character(),
+            "class"=col_character()       
+         ))
+```
+
+Important!
+
+-Do not specify column types at import, rather change column type inside R
+
+```{r}
+read_tsv(file="./Data/02_05_read_files/mpg.tsv")%>%
+  mutate_at(.vars=c("year","cyl"), .funs=as.integer)%>%
+  mutate_at(.vars=c("manufacturer","model"), .funs=as.factor)
+```
+
+### Useful tidy and non-tidyverse libraries to import
+
+```{r}
+library(readxl)
+library(rio)
+library(data.table)
+```
+
+Read xl
+
+```{r}
+read_excel(path="./Data/02_08_other_useful_import_libraries/mpg.xlsx")
+```
+
+Specify sheet to import
+
+```{r}
+read_excel(path="./Data/02_08_other_useful_import_libraries/mpg.xlsx",sheet="Sheet 1")
+```
+
+Specify a subset of the excel
+
+```{r}
+read_excel(path="./Data/02_08_other_useful_import_libraries/mpg.xlsx", range="A1:C10")
+```
+
+### Using rio
+
+```{r}
+rio::import(file="./Data/02_08_other_useful_import_libraries/mpg.xlsx")
+```
+
+```{r}
+rio::import(file="./Data/02_08_other_useful_import_libraries/mpg.xlsx",sheet="Sheet 1")
+```
+
+#### Import larger files with fread
+
+```{r}
+df.f<- fread(file="./Data/02_05_read_files/mpg_maxi.csv", sep=",")
+```
+
+Comparing times
+
+with fread
+
+```{r}
+system.time(
+  df1<- fread(file="./Data/02_05_read_files/mpg_maxi.csv", sep=",")
+)
+```
+
+Using R base
+
+```{r}
+system.time(
+  df2<- read_csv(file="./Data/02_05_read_files/mpg_maxi.csv")
+  
+)
+```
+
+Using tidyverse
+
+```{r}
+system.time(
+  df3<- read.csv(file="./Data/02_05_read_files/mpg_maxi.csv")
+  
+)
+```
+
+## Writing files
+
+CSV files
+
+```{r}
+write_csv(x=mpg,
+          file="./Data/02_05_read_files/mpg_w.csv",
+          col_name=TRUE)
+```
+
+Semicolon separated
+
+```{r}
+write_csv2(x=mpg,
+           file="./Data/02_05_read_files/mpg_w2.csv",
+           col_names = TRUE)
+```
+
+Write excel with rio
+
+```{r}
+rio::export(x=mpg,
+            file="./Data/02_05_read_files/mpg_ww.xlsx")
+```
+
+Write/read .rds file
+
+```{r}
+write_rds(x=mpg,
+          file="./Data/02_05_read_files/mpg.rds")
+```
+
+Read back rds format
+
+```{r}
+read_rds(file="./Data/02_05_read_files/mpg.rds")
+```
+
+Write/read feather file
+
+```{r}
+library(feather)
+```
+
+```{r}
+write_feather(x=mpg,
+              path="./Data/02_05_read_files/mpg.feather")
+```
+
+```{r}
+read_feather(path="./Data/02_05_read_files/mpg.feather")
+```
